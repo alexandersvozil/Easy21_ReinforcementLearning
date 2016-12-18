@@ -14,14 +14,16 @@ class TestCode(unittest2.TestCase):
 
     def test_initial_state(self):
         state = env.create_initial_state()
-        self.assertEquals(state['turn'], 'Player')
+        self.assertEquals(state['turn'], 'player')
         self.assertEquals(state['terminal'],False)
-        self.assertLessEqual(state['Player'], 10)
-        self.assertGreaterEqual(state['Player'], 1)
-        self.assertLessEqual(state['Dealer'], 10)
-        self.assertGreaterEqual(state['Dealer'], 1)
+        self.assertLessEqual(state['player'], 10)
+        self.assertGreaterEqual(state['player'], 1)
+        self.assertLessEqual(state['dealer'], 10)
+        self.assertGreaterEqual(state['dealer'], 1)
 
     def test_update_state(self):
 
         state = env.create_initial_state()
-
+        state['player'] = 50
+        reward,state = env.updateEnvironment(state)
+        self.assertEquals(state['terminal'], True)

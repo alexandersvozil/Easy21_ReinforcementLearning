@@ -100,3 +100,12 @@ class TestCode(unittest2.TestCase):
 
         self.assertDictEqual(new_state, test_env._current_state)
 
+    def test_actionexception(self):
+
+        test_env = env.Environment()
+
+        state_before_invalid_action = test_env._current_state
+        test_env.step('INVALID_ACTION')
+        state_after_invalid_action = test_env._current_state
+
+        self.assertEquals(state_before_invalid_action,state_after_invalid_action )

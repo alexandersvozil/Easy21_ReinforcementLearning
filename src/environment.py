@@ -1,7 +1,5 @@
 import numpy as np
 
-class ActionError(Exception):
-    pass
 
 
 class Environment:
@@ -19,10 +17,9 @@ class Environment:
         return initial_state
 
     def step(self, action):
-        try:
-
             if(action != 'stick' and action != 'hit'):
-                raise ActionError('Action must be either "stick" or "hit"')
+                print ('Action must be either "stick" or "hit"')
+                return 0,self._current_state
 
             if(action == 'stick'):
                 if(self._current_state['turn']== 'player'):
@@ -38,10 +35,6 @@ class Environment:
             if(action == 'hit'):
                 reward = self._updateEnvironment()
                 return reward,self._current_state
-
-        except ActionError as detail:
-            print 'ActionError:', detail
-            return 0,self._current_state
 
     def _draw(self):
        number = self._generate_number()

@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 
 
@@ -7,6 +8,7 @@ class Environment:
     def __init__(self):
         self.DEALERREWARD = 0
         self._current_state = self._create_initial_state()
+        self.initial_state = copy.deepcopy(self._current_state)
 
     def _create_initial_state(self):
         initial_state = {}
@@ -15,6 +17,8 @@ class Environment:
         initial_state['player'] = self._generate_number()
         initial_state['dealer'] = self._generate_number()
         return initial_state
+
+
 
     def step(self, action):
             if(action != 'stick' and action != 'hit'):

@@ -3,6 +3,8 @@ import environment as easy21
 import copy
 import math
 import random
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 
 class MonteCarlo:
@@ -23,7 +25,7 @@ class MonteCarlo:
         #print self._policy
         played = 0
         won = 0
-        for x in range(1000):
+        for x in range(30000):
             played += 1
             env = easy21.Environment()
             cur_state = env.initial_state
@@ -32,11 +34,17 @@ class MonteCarlo:
                 cur_reward, cur_state = env.step(action)
                 if(cur_reward is 1):
                     won+=1
-
-
-
         print "games won: ", won
         print "win percentage ", won / float(played)
+
+        Vm = np.amax(self._value_action_state,axis=0)
+        x = np.arange(1,11)
+        y = np.arange(1,22)
+        xs,ys = np.meshgrid(x,y)
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.plot_wireframe(xs,ys,Vm.T, rstride=1, cstride=1)
+        plt.show()
 
     def _generate_episode(self):
         env = easy21.Environment()
@@ -62,26 +70,25 @@ class MonteCarlo:
         e = self._K / (self._K + value_sum)
         if np.random.uniform(0,1) > e:
             action = np.argmax(self._value_action_state[:,dealer_points,player_points])
+            #print action, self._value_action_state[0,dealer_points,player_points], self._value_action_state[1,dealer_points,player_points]
         else:
             action = np.random.randint(0,2)
         return self._action_string_from_action_num(action)
 
     def _update_from_episode(self, episode_history):
 
-        states = [x for x in episode_history if isinstance(x, dict)]
-        actions = [x for x in episode_history if isinstance(x, str)]
-        rewards = [x for x in episode_history if isinstance(x, int)]
+        L = episode_history[:-1]
+        it = iter(L)
+        state_action_rewards = zip(it,it,it)#zip(states[:-1], actions ,rewards)
 
-        state_action_rewards = zip(states[:-1], actions ,rewards)
         Gt = 0
-        for j, (state, action,reward) in enumerate(reversed(state_action_rewards)):
+        for j, (state, action,reward) in enumerate(state_action_rewards):
             dealer = state['dealer'] - 1
             player = state['player'] - 1
             action_num = self._action_num_from_action_string(action)
             alpha = 1.0 / self._counter[action_num,dealer,player]
-            Gt = self._discount_factor * Gt + reward
-            self._value_action_state[action_num, dealer, player] +=\
-                alpha * (Gt - self._value_action_state[action_num, dealer, player])
+            Gt += math.pow(self._discount_factor,j) * reward
+            self._value_action_state[action_num, dealer, player] += alpha * (Gt - self._value_action_state[action_num, dealer, player])
 
     @staticmethod
     def _action_num_from_action_string(action):
@@ -118,14 +125,13 @@ class MonteCarlo:
         return True
 
     def _generate_greedy_policy(self):
-
         self._policy = np.zeros(shape=(10,21), dtype="S5")
         for dealer_p in range(0, 10):
             for player_p in range(0, 21):
-                value_hit = self._value_action_state[0][dealer_p][player_p]
-                value_stick = self._value_action_state[1][dealer_p][player_p]
+                value_hit = self._value_action_state[0,dealer_p,player_p]
+                value_stick = self._value_action_state[1,dealer_p,player_p]
                 greedy_action = max(value_stick, value_hit)
-                if greedy_action == value_hit:
+                if greedy_action is value_hit:
                     action = "hit"
                 else:
                     action = "stick"

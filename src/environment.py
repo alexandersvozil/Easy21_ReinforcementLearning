@@ -49,8 +49,8 @@ class Environment:
         return np.random.random_integers(1,10)
 
     def _generate_color(self):
-        success_red  = np.random.binomial(1, float(1)/float(3) )
-        if(success_red==1):
+        success_red  = np.random.randint(3)
+        if success_red <= 0:
             color = "red"
         else:
             color = "black"

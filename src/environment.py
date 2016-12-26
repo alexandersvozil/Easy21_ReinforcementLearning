@@ -107,3 +107,8 @@ class Environment:
             return 0
         else:
             return 1
+
+    @staticmethod
+    def _action_string_from_action_num(action):
+        action_str = 'hit' if action == 0 else 'stick'
+        return action_str

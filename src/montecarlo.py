@@ -16,6 +16,7 @@ class MonteCarlo:
         for x in range(iterations):
             episode_history = self._generate_episode()
             self._update_from_episode(episode_history)
+        return self._value_action_state
 
     def _generate_episode(self):
         env = easy21.Environment()

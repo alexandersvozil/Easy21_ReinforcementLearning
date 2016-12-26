@@ -12,43 +12,56 @@ from src import environment as env
 class TestCode(unittest2.TestCase):
     TOOMUCH = 500
 
-    def test_squares_positive_numbers_correctly(self):
-        self.assertEqual(2+2, 4)
-
     def test_initial_state(self):
         test_env = env.Environment()
 
-        state = test_env._current_state
+        self.assertEquals(test_env._current_move, 'player')
+        self.assertEquals(test_env.is_terminal(), False)
+        self.assertLessEqual(test_env._player_points, 10)
+        self.assertGreaterEqual(test_env._player_points, 1)
+        self.assertLessEqual(test_env._dealer_points, 10)
+        self.assertGreaterEqual(test_env._dealer_points, 1)
 
-        self.assertEquals(state['turn'], 'player')
-        self.assertEquals(state['terminal'],False)
-        self.assertLessEqual(state['player'], 10)
-        self.assertGreaterEqual(state['player'], 1)
-        self.assertLessEqual(state['dealer'], 10)
-        self.assertGreaterEqual(state['dealer'], 1)
+    def test_observeEnvironment(self):
+        test_env = env.Environment()
+        test_env._dealer_points = 20
+        test_env._player_points = 10
 
-    def test_update_state_terminal(self):
+        (dealer,player) = test_env.observe_environment()
+
+        self.assertEquals(dealer,20)
+        self.assertEquals(player,10)
+
+    def test_isTerminal(self):
         test_env = env.Environment()
 
-        test_env._current_state['player'] = self.TOOMUCH
-        reward = test_env._updateEnvironment()
+        isTerminal = test_env.is_terminal
 
-        self.assertEquals(test_env._current_state['terminal'], True)
+        self.assertTrue(isTerminal is False)
+
+    def test_isTerminal(self):
+        test_env = env.Environment()
+        test_env._dealer_points = 22
+        test_env._player_points = 10
+
+        isTerminal  = test_env.is_terminal()
+
+        self.assertTrue(isTerminal is True)
 
     def test_step_terminal(self):
         test_env = env.Environment()
 
-        test_env._current_state['dealer'] = self.TOOMUCH
-        test_env._current_state['turn'] = 'player'
-        reward,state = test_env.step('stick')
+        test_env._dealer_points = self.TOOMUCH
+        test_env._current_move = 'player'
+        test_env.step('stick')
 
-        self.assertEquals(state['terminal'], True)
+        self.assertEquals(test_env.is_terminal(), True)
 
     def test_step_player_wins(self):
         test_env = env.Environment()
 
-        test_env._current_state['dealer'] = self.TOOMUCH
-        test_env._current_state['turn'] = 'player'
+        test_env._dealer_points = self.TOOMUCH
+        test_env._current_move = 'player'
         reward,state = test_env.step('stick')
 
         self.assertEquals(reward, 1)
@@ -57,28 +70,27 @@ class TestCode(unittest2.TestCase):
     def test_step_dealer_wins(self):
         test_env = env.Environment()
 
-        test_env._current_state['player'] = self.TOOMUCH
-        test_env._current_state['turn'] = 'player'
+        test_env._player_points = self.TOOMUCH
+        test_env._current_move = 'player'
         reward,state = test_env.step('hit')
 
-        self.assertEquals(state['terminal'], True)
+        self.assertEquals(test_env.is_terminal(), True)
         self.assertEquals(reward, -1)
 
     def test_step_reward_zero_notTerminal(self):
         test_env = env.Environment()
 
-        test_env._current_state['player'] = 11
-        test_env._current_state['turn'] = 'player'
+        test_env._player_points = 11
+        test_env._current_move = 'player'
         reward,state = test_env.step('hit')
 
-        self.assertEquals(state['terminal'], False)
+        self.assertEquals(test_env.is_terminal(), False)
         self.assertEquals(reward, 0)
 
     def test_dealer_strategy_hit(self):
         test_env = env.Environment()
 
-        test_env._current_state['turn'] = 'dealer'
-        test_env._current_state['dealer'] = 1
+        test_env._dealer_points = 1
 
         action = test_env._dealer_logic_simple()
 
@@ -87,7 +99,7 @@ class TestCode(unittest2.TestCase):
     def test_dealer_strategy_stick(self):
         test_env = env.Environment()
 
-        test_env._current_state['dealer'] = 17
+        test_env._dealer_points = 17
 
         action = test_env._dealer_logic_simple()
 
@@ -98,14 +110,14 @@ class TestCode(unittest2.TestCase):
 
         reward,new_state = test_env.step('hit')
 
-        self.assertDictEqual(new_state, test_env._current_state)
+        self.assertEqual(new_state, test_env.observe_environment())
 
     def test_actionexception(self):
 
         test_env = env.Environment()
 
-        state_before_invalid_action = test_env._current_state
+        state_before_invalid_action = test_env.observe_environment()
         test_env.step('INVALID_ACTION')
-        state_after_invalid_action = test_env._current_state
+        state_after_invalid_action = test_env.observe_environment()
 
         self.assertEquals(state_before_invalid_action,state_after_invalid_action )

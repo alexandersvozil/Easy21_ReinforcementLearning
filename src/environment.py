@@ -1,112 +1,109 @@
 import numpy as np
-import copy
-
 
 
 class Environment:
 
     def __init__(self):
-        self.DEALERREWARD = 0
-        self._current_state = self._create_initial_state()
-        self.initial_state = copy.deepcopy(self._current_state)
+        self._current_move = 'player'
+        self._dealer_points = self._generate_card()
+        self._player_points = self._generate_card()
+        self._both_stick = False
 
-    def _create_initial_state(self):
-        initial_state = {}
-        initial_state['turn'] = 'player'
-        initial_state['terminal'] = False
-        initial_state['player'] = self._generate_number()
-        initial_state['dealer'] = self._generate_number()
-        return initial_state
-
-
+    def is_terminal(self):
+        if self._dealer_points < 1 or self._dealer_points > 21:
+            return True
+        if self._player_points < 1 or self._player_points > 21:
+            return True
+        if self._both_stick:
+            return True
+        return False
 
     def step(self, action):
-            if(action != 'stick' and action != 'hit'):
+            if action != 'stick' and action != 'hit':
                 print ('Action must be either "stick" or "hit"')
-                return 0,self._current_state
+                return 0, self.observe_environment()
 
-            if(action == 'stick'):
-                if(self._current_state['turn']== 'player'):
-                    self._current_state['turn'] = 'dealer'
+            if action == 'hit':
+                reward = self._update_environment()
+                return reward, self.observe_environment()
+
+            if action == 'stick':
+                if self._current_move == 'player':
+                    self._current_move = 'dealer'
                     self._dealer_ai()
                     reward = self._conclude_game()
-                    return reward,self._current_state
+                    return reward, self.observe_environment()
 
-                if(self._current_state['turn'] == 'dealer'):
-                    self._current_state['terminal'] = True
-                    return self.DEALERREWARD,self._current_state
+                if self._current_move == 'dealer':
+                    self._both_stick = True
+                    return 0, self.observe_environment()
 
-            if(action == 'hit'):
-                reward = self._updateEnvironment()
-                return reward,self._current_state
+    def observe_environment(self):
+        return self._dealer_points, self._player_points
+
+    def _update_environment(self):
+        number, color = self._draw()
+        self._update_score(number, color)
+        reward = self._calculate_reward()
+        return reward
 
     def _draw(self):
-       number = self._generate_number()
-       color = self._generate_color()
-       return number,color
+        number = self._generate_card()
+        color = self._generate_color()
+        return number, color
 
-    def _generate_number(self):
-        return np.random.random_integers(1,10)
+    @staticmethod
+    def _generate_card():
+        return np.random.random_integers(1, 10)
 
-    def _generate_color(self):
-        success_red  = np.random.randint(3)
+    @staticmethod
+    def _generate_color():
+        success_red = np.random.randint(3)
         if success_red <= 0:
             color = "red"
         else:
             color = "black"
         return color
 
-
-    def _updateEnvironment(self):
-
-        number,color = self._draw()
-        updated_score_state = self._update_score(number,color,self._current_state)
-        reward = self._calculate_reward(updated_score_state)
-        self._current_state = self._checkTerminal(reward,updated_score_state)
-        return reward
-
-    def _update_score(self,number, color, state):
-        turn = state['turn']
-        new_state = state
-        if (color == 'black'):
-            new_state[turn] += number
+    def _update_score(self, number, color):
+        if self._current_move == 'dealer':
+            self._dealer_points = self._updated_points(self._dealer_points, number, color)
         else:
-            new_state[turn] -= number
+            self._player_points = self._updated_points(self._player_points, number, color)
 
-        return new_state
+    @staticmethod
+    def _updated_points(current_points, number, color):
+        if color == 'black':
+            current_points += number
+        else:
+            current_points -= number
+        return current_points
 
-    def _calculate_reward(self,state):
-        turn = state['turn']
-        current_points = state[turn]
-        if(current_points < 1 or current_points > 21):
+    def _calculate_reward(self):
+        current_points = self._player_points if self._current_move == 'player' else self._dealer_points
+        if current_points < 1 or current_points > 21:
             return -1
         else:
             return 0
 
-    def _checkTerminal(self,reward, next_state):
-        if (reward < 0):
-            next_state['terminal'] = True
-
-        return next_state
-
     def _dealer_ai(self):
-        while(self._current_state['terminal'] == False):
+        while self.is_terminal() is False:
             action = self._dealer_logic_simple()
             reward, self._current_state = self.step(action)
 
     def _dealer_logic_simple(self):
-        if (self._current_state['dealer'] < 17):
+        if self._dealer_points < 17:
             return 'hit'
         else:
             return 'stick'
 
     def _conclude_game(self):
-        if self._current_state['dealer'] > 21 or self._current_state['dealer'] < 1:
+        if self._dealer_points > 21 or self._dealer_points < 1:
             return 1
 
-        if self._current_state['dealer'] > self._current_state['player']:
+        if self._dealer_points > self._player_points:
             return -1
-        elif self._current_state['dealer'] == self._current_state['player']:
+        elif self._dealer_points == self._player_points:
             return 0
         else:
             return 1
